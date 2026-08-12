@@ -18,4 +18,7 @@ public interface AffectationRepository extends JpaRepository<Affectation, Long> 
     // Calcule la recette attendue pour toutes les affectations actives
     @Query("SELECT SUM(a.recetteAttendueJournaliere) FROM Affectation a WHERE a.statut = 'EN_COURS'")
     BigDecimal calculerRecetteAttendueJournaliereGlobale();
+
+    // Récupérer toutes les affectations (du plus récent au plus ancien)
+    List<Affectation> findAllByOrderByIdDesc();
 }

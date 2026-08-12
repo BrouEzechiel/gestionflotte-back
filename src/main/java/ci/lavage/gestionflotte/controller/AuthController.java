@@ -6,11 +6,10 @@ import ci.lavage.gestionflotte.dto.request.TokenRefreshRequest;
 import ci.lavage.gestionflotte.dto.response.AuthenticationResponse;
 import ci.lavage.gestionflotte.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -19,27 +18,60 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // POST /api/auth/register
+    // Méthode utilitaire pour générer le cookie HttpOnly
+    private ResponseCookie createCookie(String name, String value, long maxAge) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(false) // Mettre à 'true' en production avec HTTPS
+                .path("/")
+                .maxAge(maxAge)
+                .sameSite("Lax") // Protection contre les requêtes inter-sites
+                .build();
+    }
+
+    // Ajoute les cookies à la réponse
+    private ResponseEntity<AuthenticationResponse> buildResponseWithCookies(AuthenticationResponse authData) {
+        // Access Token : expire dans 15 minutes (900 secondes)
+        ResponseCookie jwtCookie = createCookie("accessToken", authData.accessToken(), 900);
+        // Refresh Token : expire dans 7 jours (604800 secondes)
+        ResponseCookie refreshCookie = createCookie("refreshToken", authData.refreshToken(), 604800);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(authData);
+    }
+
     @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> inscrire(
-            @RequestBody RegisterRequest request
-    ) {
-        return ResponseEntity.ok(authService.inscrire(request));
+    public ResponseEntity<AuthenticationResponse> inscrire(@RequestBody RegisterRequest request) {
+        AuthenticationResponse response = authService.inscrire(request);
+        return buildResponseWithCookies(response);
     }
 
-    // POST /api/auth/login
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> authentifier(
-            @RequestBody AuthenticationRequest request
-    ) {
-        return ResponseEntity.ok(authService.authentifier(request));
+    public ResponseEntity<AuthenticationResponse> authentifier(@RequestBody AuthenticationRequest request) {
+        AuthenticationResponse response = authService.authentifier(request);
+        return buildResponseWithCookies(response);
     }
 
-    // POST /api/auth/refresh
     @PostMapping("/refresh")
-    public ResponseEntity<AuthenticationResponse> rafraichirLeToken(
-            @RequestBody TokenRefreshRequest request
-    ) {
-        return ResponseEntity.ok(authService.rafraichirToken(request));
+    public ResponseEntity<AuthenticationResponse> rafraichirLeToken(@RequestBody TokenRefreshRequest request) {
+        // Si vous utilisez les cookies, le frontend pourrait ne plus avoir accès au refreshToken pour l'envoyer dans le body.
+        // L'idéal ici serait de lire le refreshToken depuis les cookies (via @CookieValue),
+        // mais pour minimiser les changements, vous pouvez laisser le frontend essayer de l'envoyer s'il l'a en mémoire.
+        AuthenticationResponse response = authService.rafraichirToken(request);
+        return buildResponseWithCookies(response);
+    }
+
+    // NOUVELLE ROUTE : Pour se déconnecter (effacer les cookies)
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        ResponseCookie deleteJwt = createCookie("accessToken", "", 0);
+        ResponseCookie deleteRefresh = createCookie("refreshToken", "", 0);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, deleteJwt.toString())
+                .header(HttpHeaders.SET_COOKIE, deleteRefresh.toString())
+                .build();
     }
 }

@@ -22,8 +22,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-
-    // NOUVEAUX SERVICES INJECTÉS
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -36,13 +34,22 @@ public class AuthService {
         utilisateur.setIdentifiant(request.identifiant());
         utilisateur.setMotDePasseHash(passwordEncoder.encode(request.motDePasse()));
         utilisateur.setRole(request.role());
+        utilisateur.setNom(request.nom());
+        utilisateur.setPrenom(request.prenom());
 
         utilisateurRepository.save(utilisateur);
 
         var jwtToken = jwtService.generateToken(utilisateur);
-        var refreshToken = refreshTokenService.creerRefreshToken(utilisateur.getId()); // On crée le Refresh Token
+        var refreshToken = refreshTokenService.creerOuMettreAJourRefreshToken(utilisateur.getId());
 
-        return new AuthenticationResponse(jwtToken, refreshToken.getToken(), utilisateur.getRole().name());
+        // --- CORRECTION ICI : Ajout du nom et prénom ---
+        return new AuthenticationResponse(
+                jwtToken,
+                refreshToken.getToken(),
+                utilisateur.getRole().name(),
+                utilisateur.getNom(),
+                utilisateur.getPrenom()
+        );
     }
 
     public AuthenticationResponse authentifier(AuthenticationRequest request) {
@@ -57,25 +64,34 @@ public class AuthService {
                 .orElseThrow();
 
         var jwtToken = jwtService.generateToken(utilisateur);
-        var refreshToken = refreshTokenService.creerRefreshToken(utilisateur.getId()); // On crée le Refresh Token
+        var refreshToken = refreshTokenService.creerOuMettreAJourRefreshToken(utilisateur.getId());
 
-        return new AuthenticationResponse(jwtToken, refreshToken.getToken(), utilisateur.getRole().name());
+        // --- CORRECTION ICI : Ajout du nom et prénom ---
+        return new AuthenticationResponse(
+                jwtToken,
+                refreshToken.getToken(),
+                utilisateur.getRole().name(),
+                utilisateur.getNom(),
+                utilisateur.getPrenom()
+        );
     }
 
-    // NOUVELLE MÉTHODE : Pour générer un nouveau Access Token à partir du Refresh Token
     public AuthenticationResponse rafraichirToken(TokenRefreshRequest request) {
-        // 1. On cherche le Refresh Token en base de données
         RefreshToken refreshToken = refreshTokenRepository.findByToken(request.refreshToken())
                 .orElseThrow(() -> new RuntimeException("Refresh Token introuvable !"));
 
-        // 2. On vérifie qu'il n'est pas périmé (sinon une erreur est lancée)
         refreshTokenService.verifierExpiration(refreshToken);
 
-        // 3. Tout est bon ! On récupère l'utilisateur et on lui donne un nouvel Access Token de 15 min
         Utilisateur utilisateur = refreshToken.getUtilisateur();
         String nouveauJwtToken = jwtService.generateToken(utilisateur);
 
-        // 4. On renvoie le nouveau Access Token, en gardant le même Refresh Token
-        return new AuthenticationResponse(nouveauJwtToken, refreshToken.getToken(), utilisateur.getRole().name());
+        // --- CORRECTION ICI : Ajout du nom et prénom ---
+        return new AuthenticationResponse(
+                nouveauJwtToken,
+                refreshToken.getToken(),
+                utilisateur.getRole().name(),
+                utilisateur.getNom(),
+                utilisateur.getPrenom()
+        );
     }
 }

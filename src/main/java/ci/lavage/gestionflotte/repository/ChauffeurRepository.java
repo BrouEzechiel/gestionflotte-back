@@ -1,5 +1,6 @@
 package ci.lavage.gestionflotte.repository;
 
+import ci.lavage.gestionflotte.enums.StatutChauffeur;
 import ci.lavage.gestionflotte.model.Chauffeur;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -8,4 +9,5 @@ public interface ChauffeurRepository extends JpaRepository<Chauffeur, Long> {
     // Règle métier : Empêcher les doublons
     boolean existsByTelephone(String telephone);
     boolean existsByNumeroPermis(String numeroPermis);
+    long countByStatut(StatutChauffeur statut);
 }

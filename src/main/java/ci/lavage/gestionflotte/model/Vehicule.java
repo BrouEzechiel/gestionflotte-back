@@ -37,6 +37,12 @@ public class Vehicule {
 
     private LocalDateTime dateAjout;
 
+    // Dans Vehicule.java, ajoute ce champ :
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_proprietaire", nullable = false)
+    private Proprietaire proprietaire;
+
     @PrePersist
     protected void onCreate() {
         this.dateAjout = LocalDateTime.now();

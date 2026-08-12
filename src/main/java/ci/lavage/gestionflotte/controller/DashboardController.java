@@ -1,6 +1,7 @@
 package ci.lavage.gestionflotte.controller;
 
 import ci.lavage.gestionflotte.dto.response.ChauffeurDetteResponse;
+import ci.lavage.gestionflotte.dto.response.DashboardStatsResponse;
 import ci.lavage.gestionflotte.dto.response.KpiJournalierResponse;
 import ci.lavage.gestionflotte.service.DashboardService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -61,5 +62,10 @@ public class DashboardController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(output);
+    }
+
+    @GetMapping("/stats-generales")
+    public ResponseEntity<DashboardStatsResponse> getStatsGenerales() {
+        return ResponseEntity.ok(dashboardService.getStatsGenerales());
     }
 }

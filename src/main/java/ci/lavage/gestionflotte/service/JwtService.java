@@ -38,7 +38,6 @@ public class JwtService {
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                // MODIFICATION : L'Access Token expire maintenant dans 15 MINUTES
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15))
                 .signWith(getSignInKey(), Jwts.SIG.HS512)
                 .compact();
@@ -66,7 +65,6 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
-        // Décode ta clé Base64 super sécurisée
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }

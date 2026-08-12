@@ -15,8 +15,10 @@ public interface VehiculeRepository extends JpaRepository<Vehicule, Long> {
 
     // Pour lister et filtrer (On exclut automatiquement ceux qui sont ARCHIVE par défaut si on veut)
     @Query("SELECT v FROM Vehicule v " +
-            "WHERE (:etat IS NULL OR v.etat = :etat) " +
-            "AND (:marque IS NULL OR LOWER(v.marque) LIKE LOWER(CONCAT('%', :marque, '%'))) " +
+            "WHERE (:#{#etat == null} = true OR v.etat = :etat) " +
+            "AND LOWER(v.marque) LIKE LOWER(CONCAT('%', :marque, '%')) " +
             "ORDER BY v.id DESC")
     List<Vehicule> findByFiltres(@Param("etat") EtatVehicule etat, @Param("marque") String marque);
+
+    long countByEtat(EtatVehicule etat);
 }

@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/affectations")
 public class AffectationController {
@@ -40,5 +42,15 @@ public class AffectationController {
 
         // On retourne 200 (OK) avec l'affectation mise à jour
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 3. Lister toutes les affectations
+     * Exemple : GET http://localhost:8080/api/affectations
+     */
+    @GetMapping
+    public ResponseEntity<List<AffectationResponse>> listerAffectations() {
+        // Assurez-vous d'avoir une méthode listerAffectations() dans votre AffectationService qui retourne List<AffectationResponse>
+        return ResponseEntity.ok(affectationService.listerAffectations());
     }
 }

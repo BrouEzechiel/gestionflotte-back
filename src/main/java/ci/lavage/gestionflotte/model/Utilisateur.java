@@ -25,6 +25,12 @@ public class Utilisateur implements UserDetails {
     @Column(nullable = false, unique = true)
     private String identifiant;
 
+    @Column(nullable = true) // true pour ne pas bloquer les anciens utilisateurs déjà créés
+    private String nom;
+
+    @Column(nullable = true)
+    private String prenom;
+
     @Column(nullable = false)
     private String motDePasseHash;
 

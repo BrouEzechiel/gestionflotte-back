@@ -2,13 +2,14 @@ version: '3.8'
 
 services:
   postgres:
-    image: 'postgres:17-alpine'
+    image: 'postgres:16-alpine' # Version légère et très performante
+    restart: always
     environment:
       - POSTGRES_DB=gestion_flotte
-      - POSTGRES_PASSWORD=BrouEzechiel2102
       - POSTGRES_USER=Ezechiel
+      - POSTGRES_PASSWORD=BrouEzechiel2102
     ports:
-      - "5432:5432"
+      - "5432:5432" # Port par défaut de PostgreSQL
     volumes:
       - db_data:/var/lib/postgresql/data
 

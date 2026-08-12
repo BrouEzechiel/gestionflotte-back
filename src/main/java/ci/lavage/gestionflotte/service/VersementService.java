@@ -97,7 +97,11 @@ public class VersementService {
 
     @Transactional(readOnly = true)
     public List<VersementResponse> obtenirHistoriqueFiltre(LocalDate date, String nomChauffeur, String marqueVehicule) {
-        List<Versement> versements = versementRepository.findHistoriqueByFiltres(date, nomChauffeur, marqueVehicule);
+        // CORRECTION : On remplace les null par des chaînes vides pour éviter l'erreur 'bytea' de PostgreSQL
+        String filtreNom = (nomChauffeur == null) ? "" : nomChauffeur;
+        String filtreMarque = (marqueVehicule == null) ? "" : marqueVehicule;
+
+        List<Versement> versements = versementRepository.findHistoriqueByFiltres(date, filtreNom, filtreMarque);
         return versements.stream()
                 .map(VersementResponse::new)
                 .toList();

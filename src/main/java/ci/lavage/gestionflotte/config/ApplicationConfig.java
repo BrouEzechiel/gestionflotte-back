@@ -21,14 +21,12 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        // On explique à Spring comment trouver l'utilisateur par son identifiant
         return username -> repository.findByIdentifiant(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé : " + username));
     }
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        // C'est le fameux Bean qui manquait !
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());

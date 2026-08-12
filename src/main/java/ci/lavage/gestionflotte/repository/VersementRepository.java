@@ -16,9 +16,9 @@ public interface VersementRepository extends JpaRepository<Versement, Long> {
     List<Versement> findByAffectationIdAndStatutOrderByDateVersementAsc(Long idAffectation, StatutVersement statut);
 
     @Query("SELECT v FROM Versement v " +
-            "WHERE (:date IS NULL OR v.dateVersement = :date) " +
-            "AND (:nomChauffeur IS NULL OR LOWER(v.affectation.chauffeur.nom) LIKE LOWER(CONCAT('%', :nomChauffeur, '%'))) " +
-            "AND (:marqueVehicule IS NULL OR LOWER(v.affectation.vehicule.marque) LIKE LOWER(CONCAT('%', :marqueVehicule, '%'))) " +
+            "WHERE (:#{#date == null} = true OR v.dateVersement = :date) " +
+            "AND LOWER(v.affectation.chauffeur.nom) LIKE LOWER(CONCAT('%', :nomChauffeur, '%')) " +
+            "AND LOWER(v.affectation.vehicule.marque) LIKE LOWER(CONCAT('%', :marqueVehicule, '%')) " +
             "ORDER BY v.dateVersement DESC")
     List<Versement> findHistoriqueByFiltres(
             @Param("date") LocalDate date,

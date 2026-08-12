@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class AffectationService {
@@ -84,5 +85,16 @@ public class AffectationService {
         Affectation affectationCloturee = affectationRepository.save(affectation);
 
         return new AffectationResponse(affectationCloturee);
+    }
+
+    /**
+     * Lister toutes les affectations existantes.
+     */
+    @Transactional(readOnly = true)
+    public List<AffectationResponse> listerAffectations() {
+        return affectationRepository.findAllByOrderByIdDesc()
+                .stream()
+                .map(AffectationResponse::new)
+                .toList();
     }
 }

@@ -1,15 +1,19 @@
 package ci.lavage.gestionflotte.service;
 
 import ci.lavage.gestionflotte.dto.response.ChauffeurDetteResponse;
+import ci.lavage.gestionflotte.dto.response.DashboardStatsResponse;
 import ci.lavage.gestionflotte.dto.response.KpiJournalierResponse;
+import ci.lavage.gestionflotte.dto.response.RecetteJournaliere;
+import ci.lavage.gestionflotte.enums.EtatVehicule;
+import ci.lavage.gestionflotte.enums.StatutChauffeur;
 import ci.lavage.gestionflotte.model.Versement;
-import ci.lavage.gestionflotte.repository.AffectationRepository;
-import ci.lavage.gestionflotte.repository.VersementRepository;
+import ci.lavage.gestionflotte.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -17,10 +21,17 @@ public class DashboardService {
 
     private final AffectationRepository affectationRepository;
     private final VersementRepository versementRepository;
+    private final ChauffeurRepository chauffeurRepository;
+    private final VehiculeRepository vehiculeRepository;
+    private final DepenseRepository depenseRepository;
 
-    public DashboardService(AffectationRepository affectationRepository, VersementRepository versementRepository) {
+
+    public DashboardService(AffectationRepository affectationRepository, VersementRepository versementRepository, ChauffeurRepository chauffeurRepository, VehiculeRepository vehiculeRepository, DepenseRepository depenseRepository) {
         this.affectationRepository = affectationRepository;
         this.versementRepository = versementRepository;
+        this.chauffeurRepository = chauffeurRepository;
+        this.vehiculeRepository = vehiculeRepository;
+        this.depenseRepository = depenseRepository;
     }
 
     /**
@@ -32,17 +43,28 @@ public class DashboardService {
             date = LocalDate.now();
         }
 
-        // Récupération des données brutes avec gestion des valeurs nulles (si aucun versement ce jour-là)
         BigDecimal recetteAttendue = affectationRepository.calculerRecetteAttendueJournaliereGlobale();
         BigDecimal totalEncaisse = versementRepository.calculerTotalEncaisseParDate(date);
         BigDecimal totalImpayes = versementRepository.calculerTotalImpayesParDate(date);
 
-        // Remplacement des null par 0 pour éviter les bugs d'affichage sur le frontend
+
+        BigDecimal totalDepenses = depenseRepository.calculerTotalDepensesParDate(date);
+
         if (recetteAttendue == null) recetteAttendue = BigDecimal.ZERO;
         if (totalEncaisse == null) totalEncaisse = BigDecimal.ZERO;
         if (totalImpayes == null) totalImpayes = BigDecimal.ZERO;
+        if (totalDepenses == null) totalDepenses = BigDecimal.ZERO;
 
-        return new KpiJournalierResponse(recetteAttendue, totalEncaisse, totalImpayes.abs()); // .abs() pour afficher un nombre positif
+        // Calcul du bénéfice net de la journée (Ce qui est rentré - Ce qui est sorti)
+        BigDecimal beneficeNet = totalEncaisse.subtract(totalDepenses);
+
+        return new KpiJournalierResponse(
+                recetteAttendue,
+                totalEncaisse,
+                totalImpayes.abs(),
+                totalDepenses, // On envoie les dépenses au frontend
+                beneficeNet    // On envoie le bénéfice net au frontend
+        );
     }
 
     /**
@@ -54,12 +76,18 @@ public class DashboardService {
     }
 
     /**
-     * 3. La Rentabilité (Chiffre d'affaires) sur une période
+     * 3. La Vraie Rentabilité (Bénéfice Net) sur une période
      */
     @Transactional(readOnly = true)
     public BigDecimal calculerRentabilite(LocalDate debut, LocalDate fin) {
-        BigDecimal rentabilite = versementRepository.calculerTotalEncaisseSurPeriode(debut, fin);
-        return rentabilite != null ? rentabilite : BigDecimal.ZERO;
+        BigDecimal recettes = versementRepository.calculerTotalEncaisseSurPeriode(debut, fin);
+        BigDecimal depenses = depenseRepository.calculerTotalDepensesSurPeriode(debut, fin);
+
+        if (recettes == null) recettes = BigDecimal.ZERO;
+        if (depenses == null) depenses = BigDecimal.ZERO;
+
+        // Rentabilité = Ce qui est rentré MOINS ce qui est sorti
+        return recettes.subtract(depenses);
     }
 
     /**
@@ -90,5 +118,34 @@ public class DashboardService {
         }
 
         return csvBuilder.toString();
+    }
+
+
+    public DashboardStatsResponse getStatsGenerales() {
+
+        long chauffeursActifs = chauffeurRepository.countByStatut(StatutChauffeur.ACTIF);
+        long vehiculesTotal = vehiculeRepository.count();
+        long vehiculesEnService = vehiculeRepository.countByEtat(EtatVehicule.ACTIF);
+        long vehiculesEnPanne = vehiculeRepository.countByEtat(EtatVehicule.EN_PANNE);
+
+
+        List<RecetteJournaliere> recettesSur7Jours = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            // On réutilise votre méthode existante !
+            KpiJournalierResponse kpi = obtenirKpiJournalier(date);
+            recettesSur7Jours.add(new RecetteJournaliere(date, kpi.totalEncaisse()));
+        }
+
+        return new DashboardStatsResponse(
+                chauffeursActifs,
+                vehiculesTotal,
+                vehiculesEnService,
+                vehiculesEnPanne,
+                recettesSur7Jours
+        );
     }
 }
