@@ -30,15 +30,10 @@ public class SecurityConfiguration {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        .requestMatchers("/api/dashboard/**").hasRole("ADMINISTRATEUR")
-
-                        .requestMatchers("/api/vehicules/**", "/api/chauffeurs/**").hasRole("ADMINISTRATEUR")
-
-                        .requestMatchers("/api/versements/**").hasAnyRole("ADMINISTRATEUR", "CAISSIER")
-
+                        .requestMatchers("/api/dashboard/**").hasAuthority("ADMINISTRATEUR")
+                        .requestMatchers("/api/vehicules/**", "/api/chauffeurs/**").hasAuthority("ADMINISTRATEUR")
+                        .requestMatchers("/api/versements/**").hasAnyAuthority("ADMINISTRATEUR", "CAISSIER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
