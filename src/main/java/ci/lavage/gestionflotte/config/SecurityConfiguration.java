@@ -58,7 +58,7 @@ public class SecurityConfiguration {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:5173",
-                "https://ton-futur-domaine-vercel.vercel.app" // <-- À remplacer par ton vrai lien Vercel plus tard
+                "https://gestionflotte-front.vercel.app" // <-- À remplacer par ton vrai lien Vercel plus tard
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
