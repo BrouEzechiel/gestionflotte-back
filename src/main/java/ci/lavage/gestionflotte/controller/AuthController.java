@@ -18,14 +18,14 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // Méthode utilitaire pour générer le cookie HttpOnly
+    // Méthode utilitaire pour générer le cookie HttpOnly corrigée pour la production (Vercel/Render)
     private ResponseCookie createCookie(String name, String value, long maxAge) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(false) // Mettre à 'true' en production avec HTTPS
+                .secure(true) // OBLIGATOIRE en production (HTTPS sur Render)
                 .path("/")
                 .maxAge(maxAge)
-                .sameSite("Lax") // Protection contre les requêtes inter-sites
+                .sameSite("None") // OBLIGATOIRE pour les requêtes inter-sites (Vercel vers Render)
                 .build();
     }
 
@@ -56,14 +56,10 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthenticationResponse> rafraichirLeToken(@RequestBody TokenRefreshRequest request) {
-        // Si vous utilisez les cookies, le frontend pourrait ne plus avoir accès au refreshToken pour l'envoyer dans le body.
-        // L'idéal ici serait de lire le refreshToken depuis les cookies (via @CookieValue),
-        // mais pour minimiser les changements, vous pouvez laisser le frontend essayer de l'envoyer s'il l'a en mémoire.
         AuthenticationResponse response = authService.rafraichirToken(request);
         return buildResponseWithCookies(response);
     }
 
-    // NOUVELLE ROUTE : Pour se déconnecter (effacer les cookies)
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
         ResponseCookie deleteJwt = createCookie("accessToken", "", 0);
