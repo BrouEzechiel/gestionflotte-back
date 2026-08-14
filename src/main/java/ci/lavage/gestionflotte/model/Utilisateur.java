@@ -56,8 +56,8 @@ public class Utilisateur implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Ajoute le préfixe ROLE_ pour que Spring Security reconnaisse le rôle
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        // On retire le préfixe "ROLE_" pour correspondre exactement à ton SecurityConfiguration
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     @Override
